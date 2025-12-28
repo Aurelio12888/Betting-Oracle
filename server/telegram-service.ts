@@ -48,6 +48,9 @@ function analyzePattern(history: any[]): { pattern: string, prediction: 'blue' |
   return null;
 }
 
+let winStreak = 0;
+let lossCount = 0;
+
 export async function processNewResult(color: 'blue' | 'red' | 'tie', score?: string) {
   if (color === 'tie') {
     const latestSignal = await storage.getLatestSignal();
@@ -64,15 +67,26 @@ export async function processNewResult(color: 'blue' | 'red' | 'tie', score?: st
   if (latestSignal && latestSignal.status === 'pending') {
     if (latestSignal.prediction === color) {
       await storage.updateSignalStatus(latestSignal.id, 'won');
+      winStreak++;
+      lossCount = 0;
       if (bot && telegramChatId) {
         const emoji = color === 'blue' ? '🔵' : '🔴';
         const scoreInfo = score ? ` (${score})` : '';
         bot.sendMessage(telegramChatId, `✅ *VITÓRIA CONFIRMADA!*
 Lado: ${emoji} ${color.toUpperCase()}${scoreInfo}
-🎯 IA Agressiva no Alvo!`, { parse_mode: 'Markdown' });
+🎯 IA Agressiva no Alvo!
+
+🔥 *Sequência:* ${winStreak} WIN(s)`, { parse_mode: 'Markdown' });
       }
     } else {
       await storage.updateSignalStatus(latestSignal.id, 'lost');
+      lossCount++;
+      winStreak = 0; // Reset streak on loss
+      if (bot && telegramChatId) {
+        bot.sendMessage(telegramChatId, `❌ *LOSS DETECTADO*
+Sequência reiniciada.
+📊 Erros seguidos: ${lossCount}`, { parse_mode: 'Markdown' });
+      }
     }
   }
 
