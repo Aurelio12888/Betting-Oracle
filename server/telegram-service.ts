@@ -60,17 +60,82 @@ let winStreak = 0;
 let lossCount = 0;
 let totalWins = 0;
 let totalLosses = 0;
+let consecutiveLosses = 0;
+let lastStatsBroadcast = Date.now();
 
-export async function notifyMarketStatus(isOpen: boolean) {
+const STRATEGIES = {
+  MARRETADA: "MARRETADA",
+  QUEBRA: "QUEBRA DE TENDÊNCIA",
+  ZIGZAG: "ZIG-ZAG",
+  PADRAO22: "PADRÃO 2-2"
+};
+
+let activeStrategies = Object.values(STRATEGIES);
+
+function analyzePattern(history: any[]): { pattern: string, prediction: 'blue' | 'red', confidence: 'high' } | null {
+  if (history.length < 10) return null; 
+  
+  const last1 = history[0].color;
+  const last2 = history[1].color;
+  const last3 = history[2].color;
+  const last4 = history[3].color;
+  const last5 = history[4].color;
+  const last6 = history[5].color;
+  const last7 = history[6].color;
+  const last8 = history[7].color;
+  const last9 = history[8].color;
+  const last10 = history[9].color;
+
+  // 1. MARRETADA ESTRATÉGICA
+  if (activeStrategies.includes(STRATEGIES.MARRETADA)) {
+    if (last1 === last2 && last2 === last3 && last3 === last4 && last4 === last5) {
+      return { pattern: STRATEGIES.MARRETADA, prediction: last1 as 'blue' | 'red', confidence: 'high' };
+    }
+  }
+
+  // 2. QUEBRA DE TENDÊNCIA ABSOLUTA
+  if (activeStrategies.includes(STRATEGIES.QUEBRA)) {
+    if (last1 === last2 && last2 === last3 && last3 === last4 && last4 === last5 && last5 === last6) {
+       return { pattern: STRATEGIES.QUEBRA, prediction: last1 === 'blue' ? 'red' : 'blue', confidence: 'high' };
+    }
+  }
+
+  // 3. ZIG-ZAG MATEMÁTICO
+  if (activeStrategies.includes(STRATEGIES.ZIGZAG)) {
+    if (last1 !== last2 && last2 !== last3 && last3 !== last4 && last4 !== last5 && last5 !== last6 && last6 !== last7 && last7 !== last8) {
+      return { pattern: STRATEGIES.ZIGZAG, prediction: last1 === 'blue' ? 'red' : 'blue', confidence: 'high' };
+    }
+  }
+
+  // 4. PADRÃO 2-2 CONSOLIDADO
+  if (activeStrategies.includes(STRATEGIES.PADRAO22)) {
+    if (last1 === last2 && last3 === last4 && last5 === last6 && last7 === last8 && last1 !== last3 && last3 === last5 && last5 !== last7) {
+       return { pattern: STRATEGIES.PADRAO22, prediction: last1 === 'blue' ? 'red' : 'blue', confidence: 'high' };
+    }
+  }
+
+  return null;
+}
+
+function broadcastStats() {
   if (bot && telegramChatId) {
-    const message = isOpen 
-      ? "✅ *MERCADO ABERTO!*\nIA voltando a monitorar o Bac Bo em tempo real. 🚀" 
-      : "🛑 *MERCADO FECHADO!*\nAguardando o Bac Bo voltar a operar. IA em standby. 💤";
+    const message = `📊 *RESUMO DE MERCADO*
+✅ Total Vitórias: ${totalWins}
+📉 Total Derrotas: ${totalLosses}
+🔥 Assertividade: ${totalWins + totalLosses > 0 ? ((totalWins / (totalWins + totalLosses)) * 100).toFixed(1) : 0}%
+
+_Monitoramento 24h ElephantBet_`;
     bot.sendMessage(telegramChatId, message, { parse_mode: 'Markdown' });
+    lastStatsBroadcast = Date.now();
   }
 }
 
 export async function processNewResult(color: 'blue' | 'red' | 'tie', score?: string) {
+  // Envio periódico do placar (a cada 2 horas aproximadamente se houver atividade)
+  if (Date.now() - lastStatsBroadcast > 1000 * 60 * 60 * 2) {
+    broadcastStats();
+  }
+
   // Check for victory from last signal
   const latestSignal = await storage.getLatestSignal();
   
@@ -81,13 +146,17 @@ export async function processNewResult(color: 'blue' | 'red' | 'tie', score?: st
       await storage.updateSignalStatus(latestSignal.id, 'won');
       winStreak++;
       totalWins++;
+      consecutiveLosses = 0;
+      // Reativa todas as estratégias após um win
+      activeStrategies = Object.values(STRATEGIES);
+
       if (bot && telegramChatId) {
         const emoji = color === 'tie' ? '🟠' : (color === 'blue' ? '🔵' : '🔴');
         const colorText = color === 'tie' ? 'EMPATE' : color.toUpperCase();
         const scoreInfo = score ? ` (${score})` : '';
         bot.sendMessage(telegramChatId, `✅ *VITÓRIA CONFIRMADA!*
 Lado: ${emoji} ${colorText}${scoreInfo}
-🎯 IA Ultra Rápida no Alvo!
+🎯 IA no Alvo!
 
 📊 *PLACAR ACUMULADO:*
 🔥 Sequência: ${winStreak} WIN(s)
@@ -98,13 +167,29 @@ Lado: ${emoji} ${colorText}${scoreInfo}
       await storage.updateSignalStatus(latestSignal.id, 'lost');
       lossCount++;
       totalLosses++;
-      winStreak = 0; // Reset streak on loss
+      winStreak = 0;
+      consecutiveLosses++;
+
+      if (consecutiveLosses >= 2) {
+        // Lógica de troca de estratégia: Remove a estratégia que falhou temporariamente
+        const failedStrategy = latestSignal.pattern;
+        activeStrategies = activeStrategies.filter(s => s !== failedStrategy);
+        
+        if (activeStrategies.length === 0) activeStrategies = Object.values(STRATEGIES); // Reset se todas falharem
+
+        if (bot && telegramChatId) {
+          bot.sendMessage(telegramChatId, `⚠️ *ALERTA DE SEGURANÇA*
+2 Losses seguidos detectados. 
+MUDANDO ESTRATÉGIAS para mitigar riscos.
+Estratégia suspensa: *${failedStrategy}*`, { parse_mode: 'Markdown' });
+        }
+      }
+
       if (bot && telegramChatId) {
         bot.sendMessage(telegramChatId, `❌ *LOSS DETECTADO*
 Sequência reiniciada.
 
 📊 *PLACAR ACUMULADO:*
-🔥 Sequência: ${winStreak}
 ✅ Total Wins: ${totalWins}
 📉 Total Losses: ${totalLosses}`, { parse_mode: 'Markdown' });
       }
