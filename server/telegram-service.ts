@@ -16,7 +16,7 @@ if (telegramToken) {
 }
 
 function analyzePattern(history: any[]): { pattern: string, prediction: 'blue' | 'red', confidence: 'high' } | null {
-  if (history.length < 10) return null; 
+  if (history.length < 6) return null; 
   
   const last1 = history[0].color;
   const last2 = history[1].color;
@@ -24,31 +24,25 @@ function analyzePattern(history: any[]): { pattern: string, prediction: 'blue' |
   const last4 = history[3].color;
   const last5 = history[4].color;
   const last6 = history[5].color;
-  const last7 = history[6].color;
-  const last8 = history[7].color;
-  const last9 = history[8].color;
-  const last10 = history[9].color;
 
-  // 1. MARRETADA DE ELITE (Forte tendência confirmada)
-  // Requer 5 iguais para prever continuação com alta segurança (estratégia comprovada)
-  if (last1 === last2 && last2 === last3 && last3 === last4 && last4 === last5) {
-    return { pattern: "MARRETADA (96% Precisão)", prediction: last1 as 'blue' | 'red', confidence: 'high' };
+  // 1. MARRETADA ACELERADA (Detecta tendência em 3 e prevê o 4º)
+  if (last1 === last2 && last2 === last3) {
+    return { pattern: "MARRETADA (Alta Velocidade)", prediction: last1 as 'blue' | 'red', confidence: 'high' };
   }
 
-  // 2. QUEBRA DE TENDÊNCIA ABSOLUTA (Exaustão do padrão)
-  // Requer 6 iguais para prever a quebra inevitável
-  if (last1 === last2 && last2 === last3 && last3 === last4 && last4 === last5 && last5 === last6) {
-     return { pattern: "QUEBRA DE TENDÊNCIA (96% Precisão)", prediction: last1 === 'blue' ? 'red' : 'blue', confidence: 'high' };
+  // 2. QUEBRA DE TENDÊNCIA RÁPIDA (Reversão após 4 iguais)
+  if (last1 === last2 && last2 === last3 && last3 === last4) {
+     return { pattern: "QUEBRA DE TENDÊNCIA (Alta Velocidade)", prediction: last1 === 'blue' ? 'red' : 'blue', confidence: 'high' };
   }
 
-  // 3. ZIG-ZAG DE ALTA FREQUÊNCIA (Padrão matemático B R B R B R B R)
-  if (last1 !== last2 && last2 !== last3 && last3 !== last4 && last4 !== last5 && last5 !== last6 && last6 !== last7 && last7 !== last8) {
-    return { pattern: "ZIG-ZAG (96% Precisão)", prediction: last1 === 'blue' ? 'red' : 'blue', confidence: 'high' };
+  // 3. ZIG-ZAG DINÂMICO (B R B R)
+  if (last1 !== last2 && last2 !== last3 && last3 !== last4 && last1 === last3) {
+    return { pattern: "ZIG-ZAG (Alta Velocidade)", prediction: last1 === 'blue' ? 'red' : 'blue', confidence: 'high' };
   }
 
-  // 4. PADRÃO 2-2 REPETIDO (BB RR BB RR)
-  if (last1 === last2 && last3 === last4 && last5 === last6 && last7 === last8 && last1 !== last3 && last3 === last5 && last5 !== last7) {
-     return { pattern: "PADRÃO 2-2 (96% Precisão)", prediction: last1 === 'blue' ? 'red' : 'blue', confidence: 'high' };
+  // 4. PADRÃO 2-2 AGILIZADO (BB RR)
+  if (last1 === last2 && last3 === last4 && last1 !== last3) {
+     return { pattern: "PADRÃO 2-2 (Alta Velocidade)", prediction: last1 === 'blue' ? 'red' : 'blue', confidence: 'high' };
   }
 
   return null;
@@ -56,6 +50,8 @@ function analyzePattern(history: any[]): { pattern: string, prediction: 'blue' |
 
 let winStreak = 0;
 let lossCount = 0;
+let totalWins = 0;
+let totalLosses = 0;
 
 export async function notifyMarketStatus(isOpen: boolean) {
   if (bot && telegramChatId) {
@@ -76,29 +72,33 @@ export async function processNewResult(color: 'blue' | 'red' | 'tie', score?: st
     if (isWin) {
       await storage.updateSignalStatus(latestSignal.id, 'won');
       winStreak++;
+      totalWins++;
       if (bot && telegramChatId) {
         const emoji = color === 'tie' ? '🟠' : (color === 'blue' ? '🔵' : '🔴');
         const colorText = color === 'tie' ? 'EMPATE' : color.toUpperCase();
         const scoreInfo = score ? ` (${score})` : '';
         bot.sendMessage(telegramChatId, `✅ *VITÓRIA CONFIRMADA!*
 Lado: ${emoji} ${colorText}${scoreInfo}
-🎯 IA Agressiva no Alvo!
+🎯 IA Ultra Rápida no Alvo!
 
-📊 *PLACAR ATUAL:*
+📊 *PLACAR ACUMULADO:*
 🔥 Sequência: ${winStreak} WIN(s)
-📉 Derrotas: ${lossCount}`, { parse_mode: 'Markdown' });
+✅ Total Wins: ${totalWins}
+📉 Total Losses: ${totalLosses}`, { parse_mode: 'Markdown' });
       }
     } else {
       await storage.updateSignalStatus(latestSignal.id, 'lost');
       lossCount++;
+      totalLosses++;
       winStreak = 0; // Reset streak on loss
       if (bot && telegramChatId) {
         bot.sendMessage(telegramChatId, `❌ *LOSS DETECTADO*
 Sequência reiniciada.
 
-📊 *PLACAR ATUAL:*
-🔥 Sequência: ${winStreak} WIN(s)
-📉 Derrotas: ${lossCount}`, { parse_mode: 'Markdown' });
+📊 *PLACAR ACUMULADO:*
+🔥 Sequência: ${winStreak}
+✅ Total Wins: ${totalWins}
+📉 Total Losses: ${totalLosses}`, { parse_mode: 'Markdown' });
       }
     }
   }
@@ -126,10 +126,12 @@ Sequência reiniciada.
 🎯 *CONFIANÇA:* 96%
 👉 *ENTRADA:* ${emoji} ${colorText}
 
+📊 *PLACAR:* W: ${totalWins} | L: ${totalLosses}
+
 ⚠️ *PROTEÇÃO NO EMPATE* 🟠
 🔄 *ATÉ 2 GALES*
 
-_Análise de Alta Precisão Concluída._`;
+_Análise em tempo real (Alta Velocidade)_`;
 
       bot.sendMessage(telegramChatId, message, { parse_mode: 'Markdown' })
         .catch(err => console.error("Telegram Error:", err.message));
