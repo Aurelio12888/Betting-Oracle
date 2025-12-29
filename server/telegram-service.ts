@@ -16,7 +16,7 @@ if (telegramToken) {
 }
 
 function analyzePattern(history: any[]): { pattern: string, prediction: 'blue' | 'red', confidence: 'high' | 'medium' } | null {
-  if (history.length < 6) return null; 
+  if (history.length < 8) return null; 
   
   const last1 = history[0].color;
   const last2 = history[1].color;
@@ -24,25 +24,27 @@ function analyzePattern(history: any[]): { pattern: string, prediction: 'blue' |
   const last4 = history[3].color;
   const last5 = history[4].color;
   const last6 = history[5].color;
+  const last7 = history[6].color;
+  const last8 = history[7].color;
 
-  if (last1 === last2 && last2 === last3) {
-    return { pattern: "MARRETADA", prediction: last1 as 'blue' | 'red', confidence: 'high' };
-  }
-
+  // 1. MARRETADA REFORÇADA (Streak of 4)
   if (last1 === last2 && last2 === last3 && last3 === last4) {
-     return { pattern: "QUEBRA DE TENDÊNCIA", prediction: last1 === 'blue' ? 'red' : 'blue', confidence: 'high' };
+    return { pattern: "MARRETADA (Alta Confiança)", prediction: last1 as 'blue' | 'red', confidence: 'high' };
   }
 
-  if (last1 !== last2 && last2 !== last3 && last3 !== last4 && last1 === last3 && last2 === last4) {
-    return { pattern: "ZIG-ZAG", prediction: last1 === 'blue' ? 'red' : 'blue', confidence: 'high' };
+  // 2. QUEBRA DE TENDÊNCIA PRECISA (Reverse after 5)
+  if (last1 === last2 && last2 === last3 && last3 === last4 && last4 === last5) {
+     return { pattern: "QUEBRA DE TENDÊNCIA (Confirmada)", prediction: last1 === 'blue' ? 'red' : 'blue', confidence: 'high' };
   }
 
-  if (last1 === last2 && last3 === last4 && last1 !== last3) {
-     return { pattern: "PADRÃO 2-2", prediction: last1 === 'blue' ? 'red' : 'blue', confidence: 'medium' };
+  // 3. ZIG-ZAG ESTÁVEL (B R B R B R)
+  if (last1 !== last2 && last2 !== last3 && last3 !== last4 && last4 !== last5 && last5 !== last6) {
+    return { pattern: "ZIG-ZAG (Filtro Ativo)", prediction: last1 === 'blue' ? 'red' : 'blue', confidence: 'high' };
   }
 
-  if (last1 !== last2 && last2 === last3 && last3 === last4 && last4 !== last5) {
-     return { pattern: "PADRÃO 3-1", prediction: last1 as 'blue' | 'red', confidence: 'medium' };
+  // 4. PADRÃO 2-2 REPETIDO (BB RR BB)
+  if (last1 === last2 && last3 === last4 && last5 === last6 && last1 !== last3 && last3 === last5) {
+     return { pattern: "PADRÃO 2-2 (Sequencial)", prediction: last1 === 'blue' ? 'red' : 'blue', confidence: 'high' };
   }
 
   return null;
@@ -61,31 +63,26 @@ export async function notifyMarketStatus(isOpen: boolean) {
 }
 
 export async function processNewResult(color: 'blue' | 'red' | 'tie', score?: string) {
-  if (color === 'tie') {
-    const latestSignal = await storage.getLatestSignal();
-    if (latestSignal && latestSignal.status === 'pending') {
-      if (bot && telegramChatId) {
-        bot.sendMessage(telegramChatId, "⚪ *EMPATE DETECTADO!*\nProteção ativada. Seguimos para a próxima.", { parse_mode: 'Markdown' });
-      }
-    }
-    return;
-  }
-
-  // Check for victory from last signal BEFORE adding the new result to storage
+  // Check for victory from last signal
   const latestSignal = await storage.getLatestSignal();
+  
   if (latestSignal && latestSignal.status === 'pending') {
-    if (latestSignal.prediction === color) {
+    const isWin = latestSignal.prediction === color || color === 'tie';
+    
+    if (isWin) {
       await storage.updateSignalStatus(latestSignal.id, 'won');
       winStreak++;
-      lossCount = 0;
       if (bot && telegramChatId) {
-        const emoji = color === 'blue' ? '🔵' : '🔴';
+        const emoji = color === 'tie' ? '🟠' : (color === 'blue' ? '🔵' : '🔴');
+        const colorText = color === 'tie' ? 'EMPATE' : color.toUpperCase();
         const scoreInfo = score ? ` (${score})` : '';
         bot.sendMessage(telegramChatId, `✅ *VITÓRIA CONFIRMADA!*
-Lado: ${emoji} ${color.toUpperCase()}${scoreInfo}
+Lado: ${emoji} ${colorText}${scoreInfo}
 🎯 IA Agressiva no Alvo!
 
-🔥 *Sequência:* ${winStreak} WIN(s)`, { parse_mode: 'Markdown' });
+📊 *PLACAR ATUAL:*
+🔥 Sequência: ${winStreak} WIN(s)
+📉 Derrotas: ${lossCount}`, { parse_mode: 'Markdown' });
       }
     } else {
       await storage.updateSignalStatus(latestSignal.id, 'lost');
@@ -94,10 +91,15 @@ Lado: ${emoji} ${color.toUpperCase()}${scoreInfo}
       if (bot && telegramChatId) {
         bot.sendMessage(telegramChatId, `❌ *LOSS DETECTADO*
 Sequência reiniciada.
-📊 Erros seguidos: ${lossCount}`, { parse_mode: 'Markdown' });
+
+📊 *PLACAR ATUAL:*
+🔥 Sequência: ${winStreak} WIN(s)
+📉 Derrotas: ${lossCount}`, { parse_mode: 'Markdown' });
       }
     }
   }
+
+  if (color === 'tie') return;
 
   await storage.addGameResult({ color });
   const history = await storage.getGameHistory(15);
