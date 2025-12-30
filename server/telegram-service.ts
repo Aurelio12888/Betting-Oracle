@@ -8,12 +8,12 @@ let bot: TelegramBot | null = null;
 
 if (telegramToken) {
   bot = new TelegramBot(telegramToken, { polling: true });
-  console.log("Telegram Bot initialized for polling");
+  console.log("[TELEGRAM] Bot iniciado com Polling");
 
   // Envia mensagem inicial ao chat ID configurado se existir
   if (telegramChatId) {
     console.log(`[TELEGRAM] Tentando enviar mensagem inicial para Chat ID: ${telegramChatId}`);
-    bot.sendMessage(telegramChatId, "✅ *SISTEMA REESTABELECIDO*\nIA Bac Bo está Online e Monitorando! 🚀\n\n📊 *PRONTO PARA OS SINAIS*", { parse_mode: 'Markdown' })
+    bot.sendMessage(telegramChatId, "✅ *SISTEMA REESTABELECIDO*\nIA Bac Bo está Online e Monitorando! 🚀\n\n🎯 *ESTE É O NOVO CANAL DE SINAIS!*", { parse_mode: 'Markdown' })
       .then(() => console.log("[TELEGRAM] Mensagem inicial enviada com sucesso!"))
       .catch(err => {
         console.error("[TELEGRAM] Erro CRÍTICO ao enviar mensagem inicial:", err.message);
