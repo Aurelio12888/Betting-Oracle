@@ -1,0 +1,9 @@
+node_modules
+dist
+.replit
+.apt
+replit.nix
+*.log
+.git
+.env
+attached_assets
