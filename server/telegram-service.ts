@@ -7,7 +7,15 @@ const telegramChatId = process.env.TELEGRAM_CHAT_ID;
 let bot: TelegramBot | null = null;
 
 if (telegramToken) {
-  bot = new TelegramBot(telegramToken, { polling: true });
+  bot = new TelegramBot(telegramToken, { 
+    polling: {
+      interval: 300,
+      autoStart: true,
+      params: {
+        timeout: 10
+      }
+    }
+  });
   console.log("[TELEGRAM] Bot iniciado com Polling");
 
   // Envia mensagem inicial ao chat ID configurado se existir
@@ -16,8 +24,7 @@ if (telegramToken) {
     bot.sendMessage(telegramChatId, "✅ *SISTEMA REESTABELECIDO*\nIA Bac Bo está Online e Monitorando! 🚀\n\n🎯 *ESTE É O NOVO CANAL DE SINAIS!*", { parse_mode: 'Markdown' })
       .then(() => console.log("[TELEGRAM] Mensagem inicial enviada com sucesso!"))
       .catch(err => {
-        console.error("[TELEGRAM] Erro CRÍTICO ao enviar mensagem inicial:", err.message);
-        console.error("[TELEGRAM] Detalhes do erro:", JSON.stringify(err, null, 2));
+        console.error("[TELEGRAM] Erro ao enviar mensagem inicial:", err.message);
         if (err.message.includes('chat not found')) {
           console.error("[TELEGRAM] DICA: O Bot precisa ser iniciado pelo usuário ou adicionado a um grupo/canal primeiro.");
         }
