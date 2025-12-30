@@ -63,6 +63,7 @@
     "passport-local": "^1.0.0",
     "pg": "^8.16.3",
     "tsx": "^4.7.0" ,
+    "esbuild": "^0.19.12",
     "puppeteer-core": "^24.34.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
