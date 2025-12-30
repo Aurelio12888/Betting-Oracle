@@ -217,6 +217,9 @@ Sequência reiniciada.
 
 📊 *PLACAR:* W: ${totalWins} | L: ${totalLosses}
 
+🔗 *CADASTRE-SE AGORA:* 
+[CLIQUE AQUI PARA SE CADASTRAR](https://www.elephantbet.com/)
+
 ⚠️ *PROTEÇÃO NO EMPATE* 🟠
 🔄 *ATÉ 2 GALES*
 
