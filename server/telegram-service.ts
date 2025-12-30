@@ -12,16 +12,31 @@ if (telegramToken) {
 
   // Envia mensagem inicial ao chat ID configurado se existir
   if (telegramChatId) {
-    console.log(`Tentando enviar mensagem inicial para Chat ID: ${telegramChatId}`);
+    console.log(`[TELEGRAM] Tentando enviar mensagem inicial para Chat ID: ${telegramChatId}`);
     bot.sendMessage(telegramChatId, "✅ *SISTEMA REESTABELECIDO*\nIA Bac Bo está Online e Monitorando! 🚀\n\n📊 *PRONTO PARA OS SINAIS*", { parse_mode: 'Markdown' })
-      .then(() => console.log("Mensagem inicial enviada com sucesso!"))
+      .then(() => console.log("[TELEGRAM] Mensagem inicial enviada com sucesso!"))
       .catch(err => {
-        console.error("Erro CRÍTICO ao enviar mensagem inicial:", err.message);
+        console.error("[TELEGRAM] Erro CRÍTICO ao enviar mensagem inicial:", err.message);
+        console.error("[TELEGRAM] Detalhes do erro:", JSON.stringify(err, null, 2));
         if (err.message.includes('chat not found')) {
-          console.error("DICA: O Bot precisa ser iniciado pelo usuário ou adicionado a um grupo/canal primeiro.");
+          console.error("[TELEGRAM] DICA: O Bot precisa ser iniciado pelo usuário ou adicionado a um grupo/canal primeiro.");
         }
       });
   }
+
+  // Monitorar todos os erros do polling
+  bot.on('polling_error', (error) => {
+    console.error("[TELEGRAM] Erro de Polling:", error.message);
+    console.error("[TELEGRAM] Detalhes:", JSON.stringify(error, null, 2));
+  });
+
+  bot.on('webhook_error', (error) => {
+    console.error("[TELEGRAM] Erro de Webhook:", error.message);
+  });
+
+  bot.on('error', (error) => {
+    console.error("[TELEGRAM] Erro Geral do Bot:", error.message);
+  });
 
   bot.onText(/\/start/, (msg) => {
     bot?.sendMessage(msg.chat.id, "🔥 *IA BAC BO AGRESSIVA ATIVA*\nMonitorando ElephantBet em tempo real...", { parse_mode: 'Markdown' });
