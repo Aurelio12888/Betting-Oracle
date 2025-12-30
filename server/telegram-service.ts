@@ -12,8 +12,15 @@ if (telegramToken) {
 
   // Envia mensagem inicial ao chat ID configurado se existir
   if (telegramChatId) {
+    console.log(`Tentando enviar mensagem inicial para Chat ID: ${telegramChatId}`);
     bot.sendMessage(telegramChatId, "✅ *SISTEMA REESTABELECIDO*\nIA Bac Bo está Online e Monitorando! 🚀\n\n📊 *PRONTO PARA OS SINAIS*", { parse_mode: 'Markdown' })
-      .catch(err => console.error("Erro ao enviar mensagem inicial:", err.message));
+      .then(() => console.log("Mensagem inicial enviada com sucesso!"))
+      .catch(err => {
+        console.error("Erro CRÍTICO ao enviar mensagem inicial:", err.message);
+        if (err.message.includes('chat not found')) {
+          console.error("DICA: O Bot precisa ser iniciado pelo usuário ou adicionado a um grupo/canal primeiro.");
+        }
+      });
   }
 
   bot.onText(/\/start/, (msg) => {
