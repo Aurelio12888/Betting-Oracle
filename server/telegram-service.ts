@@ -10,6 +10,12 @@ if (telegramToken) {
   bot = new TelegramBot(telegramToken, { polling: true });
   console.log("Telegram Bot initialized for polling");
 
+  // Envia mensagem inicial ao chat ID configurado se existir
+  if (telegramChatId) {
+    bot.sendMessage(telegramChatId, "✅ *SISTEMA REESTABELECIDO*\nIA Bac Bo está Online e Monitorando! 🚀\n\n📊 *PRONTO PARA OS SINAIS*", { parse_mode: 'Markdown' })
+      .catch(err => console.error("Erro ao enviar mensagem inicial:", err.message));
+  }
+
   bot.onText(/\/start/, (msg) => {
     bot?.sendMessage(msg.chat.id, "🔥 *IA BAC BO AGRESSIVA ATIVA*\nMonitorando ElephantBet em tempo real...", { parse_mode: 'Markdown' });
   });
