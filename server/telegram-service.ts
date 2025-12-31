@@ -21,7 +21,7 @@ if (telegramToken) {
   // Envia mensagem inicial ao chat ID configurado se existir
   if (telegramChatId) {
     console.log(`[TELEGRAM] Tentando enviar mensagem inicial para Chat ID: ${telegramChatId}`);
-    bot.sendMessage(telegramChatId, "✅ *SISTEMA REESTABELECIDO*\nIA Bac Bo está Online e Monitorando! 🚀\n\n🎯 *ESTE É O NOVO CANAL DE SINAIS!*", { parse_mode: 'Markdown' })
+    bot.sendMessage(telegramChatId, "✅ *SISTEMA REESTABELECIDO*\nIA Bac Bo está Online e Monitorando! 🚀\n\n🎯 *GRUPO ATUALIZADO COM SUCESSO!*", { parse_mode: 'Markdown' })
       .then(() => console.log("[TELEGRAM] Mensagem inicial enviada com sucesso!"))
       .catch(err => {
         console.error("[TELEGRAM] Erro ao enviar mensagem inicial:", err.message);

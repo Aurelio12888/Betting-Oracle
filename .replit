@@ -41,5 +41,3 @@ waitForPort = 5000
 [userenv]
 
 [userenv.shared]
-TELEGRAM_BOT_TOKEN = "8285876812:AAGL9hE_gMcogEbums9lN4rHL5juHfgSeJ0"
-TELEGRAM_CHAT_ID = "-1003663714315"
