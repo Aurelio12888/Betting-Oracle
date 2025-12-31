@@ -1,14 +1,13 @@
-import { defineConfig } from "drizzle-kit";
-
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL, ensure the database is provisioned");
-}
+import { defineConfig } from 'drizzle-kit';
 
 export default defineConfig({
-  out: "./migrations",
-  schema: "./shared/schema.ts",
-  dialect: "postgresql",
+  // Ensure this points exactly to the schema file you requested
+  schema: './src/shared/schema.ts',
+  // migrations / out directory (adjust if you use a different path)
+  out: './drizzle',
+  // driver used for generating SQL (adjust if you use a different DB)
+  driver: 'pg',
   dbCredentials: {
-    url: process.env.DATABASE_URL,
+    connectionString: process.env.DATABASE_URL,
   },
 });
